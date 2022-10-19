@@ -1,0 +1,7 @@
+servers:
+  -
+    name: local
+    sys: win
+    cd: 'E:\ProgramProjects\PublicGIT\RemoteBot'
+    python: 'conda activate bots'
+    shell: 'C:\Windows\System32\cmd.exe'
