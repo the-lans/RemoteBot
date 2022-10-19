@@ -1,7 +1,19 @@
 servers:
   -
-    name: local
+    name: 'local'
     sys: win
     cd: 'E:\ProgramProjects\PublicGIT\RemoteBot'
-    python: 'conda activate bots'
+    pyenv: 'conda activate bots'
     shell: 'C:\Windows\System32\cmd.exe'
+    encode: cp1251
+    decode: cp866
+  -
+    name: 'CentOS 7'
+    ip: '192.168.0.10'
+    user: root
+    port: 22
+    sys: lin
+    cd: '/var/my_project'
+    pyenv: 'source /var/venv3.8/bin/activate'
+    tracking:
+      - '/var/log/messages'
