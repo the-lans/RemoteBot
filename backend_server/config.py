@@ -45,6 +45,7 @@ def read_main_config(filename: str) -> dict:
     except FileNotFoundError:
         settings = {}
     res['servers'] = settings.get('servers', [])
+    res['commands_pyenv'] = settings.get('commands_pyenv', [])
     return res
 
 

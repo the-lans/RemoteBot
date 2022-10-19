@@ -1,7 +1,7 @@
 from fabric import Connection
 from fabric.runners import Result
 
-from backend_server.config import tgconf, DATA_DIR
+from backend_server.config import tgconf, main_conf, DATA_DIR
 from backend_server.func import cmd_parser
 from backend_server.file_change_tracking import FileChangeTracking
 
@@ -85,8 +85,9 @@ class UserSettings:
         elif first_cmd in ['pyenv', 'shell']:
             return self.set_attr_cmd(first_cmd, ' '.join(text_cmd[1:])), None
         elif first_cmd in ['cmd', 'get', 'put', 'local', 'sudo']:
-            main_cmd = first_cmd
+            main_cmd = first_cmd[:]
             shell_com = ' '.join(text_cmd[1:])
+            first_cmd = text_cmd[1].lower()
         else:
             shell_com = text
 
@@ -100,7 +101,7 @@ class UserSettings:
             if main_cmd in ['run', 'cmd', 'sudo']:
                 cmd_func = {'run': self.con.run, 'cmd': self.con.run, 'sudo': self.con.sudo}
                 with self.con.cd(self.cd):
-                    com = f'{self.pyenv} && {shell_com}'
+                    com = f'{self.pyenv} && {shell_com}' if first_cmd in main_conf['commands_pyenv'] else shell_com
                     result = cmd_func[main_cmd](com, hide=True, asynchronous=False)
                     return self.format_out(result, message_success), srv_type
             elif main_cmd in ['get', 'put', 'local']:

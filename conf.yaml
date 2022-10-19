@@ -17,3 +17,8 @@ servers:
     pyenv: 'source /var/venv3.8/bin/activate'
     tracking:
       - '/var/log/messages'
+
+commands_pyenv:
+  - pip
+  - python
+  - conda
