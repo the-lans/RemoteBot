@@ -2,16 +2,10 @@ from telebot import types
 
 from backend_server.config import tgbot, main_conf
 from backend_server.func import group_elements
+from backend_server.func_bot import bot_send_file
 from backend_server.user_settings import UserSettings
 
 current_user = UserSettings()
-
-
-def bot_send_file(chat_id: int, filename: str):
-    doc = open(filename, 'rb')
-    msg = tgbot.send_document(chat_id, doc)
-    doc.close()
-    return msg
 
 
 def command_select_server(chat_id: int, message_text: str):
@@ -31,7 +25,7 @@ def command_select_server(chat_id: int, message_text: str):
 
 
 def command_work_session(chat_id: int, message_text: str):
-    output, srv_type = current_user.con_send(message_text)
+    output, srv_type = current_user.con_send(chat_id, message_text)
     if output:
         markup = types.ReplyKeyboardRemove()
         message_send, tmp_file = current_user.set_content(output, srv_type)

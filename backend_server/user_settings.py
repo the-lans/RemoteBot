@@ -1,8 +1,10 @@
+from os.path import join, basename, splitext
 from fabric import Connection
 from fabric.runners import Result
 
 from backend_server.config import tgconf, main_conf, DATA_DIR
 from backend_server.func import cmd_parser, path_relative, path_join, dict_to_str
+from backend_server.func_bot import bot_send_file
 from backend_server.file_change_tracking import FileChangeTracking
 
 
@@ -76,13 +78,13 @@ class UserSettings:
     def get_type_server(self, main_cmd: str) -> str:
         return 'local' if main_cmd == 'local' or not self.is_srv else 'server'
 
-    def con_send(self, text: str) -> (str, str):
+    def con_send(self, chat_id: int, text: str) -> (str, str):
         text = text.strip()
         if not text:
             return None, None
 
         text_cmd = text.split(' ')
-        if not self.is_srv and text_cmd[0].lower() not in ['cmd', 'get', 'put', 'local', 'sudo']:
+        if not self.is_srv and text_cmd[0].lower() not in ['cmd', 'get', 'put', 'local', 'sudo', 'bot']:
             text = f'local {text}'
             text_cmd.insert(0, 'local')
 
@@ -127,7 +129,7 @@ class UserSettings:
             elif main_cmd in ['bot']:
                 if len(args) > 0:
                     del args[0]
-                result = self.command_bot(first_cmd, *args, **kwargs)
+                result = self.command_bot(chat_id, first_cmd, message_success, *args, **kwargs)
                 return result, srv_type
         except Exception as err:
             return str(err), None
@@ -152,7 +154,13 @@ class UserSettings:
         data['tmp_file'] = self.tmp_file.tmp_file
         return data
 
-    def command_bot(self, first_cmd: str, *args, **kwargs) -> str:
+    def get_absolute_path(self, args: tuple, is_local: bool = False):
+        if self.is_srv and not is_local:
+            return [path_join(self.cd, item, self.sys) if path_relative(item) else item for item in args]
+        else:
+            return [path_join(self.lcd, item, self.lsys) if path_relative(item) else item for item in args]
+
+    def command_bot(self, chat_id: int, first_cmd: str, message_success: str, *args, **kwargs) -> str:
         output = None
         data = {}
         out_func = {'settings': dict_to_str, 'get': dict_to_str}
@@ -161,6 +169,16 @@ class UserSettings:
             data = self.get_settings()
         elif first_cmd == 'get':
             data = {name: getattr(self, name) for name in args}
+        elif first_cmd == 'send':
+            is_local = 'l' in kwargs and kwargs['l']
+            args = self.get_absolute_path(args, is_local)
+            filename = basename(args[0])
+            if is_local:
+                bot_send_file(chat_id, args[0])
+            else:
+                self.con.get(args[0], join(DATA_DIR, filename))
+                bot_send_file(chat_id, join(DATA_DIR, filename))
+            output = message_success
 
         if first_cmd in out_func:
             output = out_func[first_cmd](data)

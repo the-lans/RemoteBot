@@ -63,35 +63,40 @@ def cmd_parser(text):
     text_cmd = text.strip().split(' ')
     cmd = text_cmd[0]
     text_cmd = text_cmd[1:]
-    is_param, is_param_new = False, False
+    is_param2, is_param_new, is_param_new2 = False, False, False
     args, kwargs = [], {}
     for item in text_cmd:
-        is_param_new = item[:1] == '-'
-        if is_param:
-            kwargs[param] = True if is_param_new else item
-        if is_param_new:
-            item_equals = item.split('=')
-            if len(item_equals) > 1:
-                param = get_param(item_equals[0])
-                kwargs[param] = item_equals[1]
-                is_param_new = False
-            else:
-                param = get_param(item)
-        elif not is_param:
-            args.append(item)
-        is_param = is_param_new
+        is_param_new = (item[:1] == '-')
+        is_param_new2 = (item[:2] == '--')
+        if is_param_new and not is_param_new2:
+            param = get_param(item)
+            kwargs[param] = True
+        else:
+            if is_param2:
+                kwargs[param] = True if is_param_new else item
+            if is_param_new2:
+                item_equals = item.split('=')
+                if len(item_equals) > 1:
+                    param = get_param(item_equals[0])
+                    kwargs[param] = item_equals[1]
+                    is_param_new2 = False
+                else:
+                    param = get_param(item)
+            elif not is_param2:
+                args.append(item)
+        is_param2 = is_param_new2
     return cmd, args, kwargs
 
 
-def cmd_join(cmd, args, kwargs, bool_true=False, bool_false=False):
+def cmd_join(cmd, args, kwargs, bool_true=True, bool_false=True):
     dres = []
     for key, val in kwargs.items():
         if bool_true and isinstance(val, bool) and val:
-            dres.append(f'--{key}' if len(key) > 1 else f'-{key}')
+            dres.append(f'-{key}')
         elif bool_false and isinstance(val, bool) and not val:
             pass
         else:
-            dres.append(f'--{key} {val}' if len(key) > 1 else f'-{key} {val}')
+            dres.append(f'--{key} {val}')
     res = [cmd]
     if args:
         res.append(' '.join(args))
