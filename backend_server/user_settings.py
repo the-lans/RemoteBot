@@ -2,7 +2,7 @@ from fabric import Connection
 from fabric.runners import Result
 
 from backend_server.config import tgconf, main_conf, DATA_DIR
-from backend_server.func import cmd_parser, path_relative, path_join
+from backend_server.func import cmd_parser, path_relative, path_join, dict_to_str
 from backend_server.file_change_tracking import FileChangeTracking
 
 
@@ -93,7 +93,7 @@ class UserSettings:
             return self.set_attr_cd(first_cmd, text_cmd[-1]), None
         elif first_cmd in ['pyenv', 'shell']:
             return self.set_attr_cmd(first_cmd, ' '.join(text_cmd[1:])), None
-        elif first_cmd in ['cmd', 'get', 'put', 'local', 'sudo']:
+        elif first_cmd in ['cmd', 'get', 'put', 'local', 'sudo', 'bot']:
             main_cmd = first_cmd[:]
             shell_com = ' '.join(text_cmd[1:])
             first_cmd = text_cmd[1].lower()
@@ -124,8 +124,14 @@ class UserSettings:
                 cmd_func = {'get': self.con.get, 'put': self.con.put, 'local': self.con.local}
                 result = cmd_func[main_cmd](*args, **kwargs)
                 return self.format_out(result, message_success), srv_type
+            elif main_cmd in ['bot']:
+                if len(args) > 0:
+                    del args[0]
+                result = self.command_bot(first_cmd, *args, **kwargs)
+                return result, srv_type
         except Exception as err:
             return str(err), None
+        return 'Unknown error', None
 
     def set_content(self, content: str, srv_type: str) -> (str, str):
         message, filename = self.tmp_file.set_content(content)
@@ -136,3 +142,26 @@ class UserSettings:
             if self.encode and self.decode:
                 message = message.encode(self.encode).decode(self.decode).replace(u'\xa0', u' ')
         return message, filename
+
+    def get_settings(self) -> dict:
+        data = {
+            name: getattr(self, name)
+            for name in ['cd', 'lcd', 'pyenv', 'shell', 'encode', 'decode', 'lencode', 'ldecode', 'sys', 'lsys']
+            if getattr(self, name)
+        }
+        data['tmp_file'] = self.tmp_file.tmp_file
+        return data
+
+    def command_bot(self, first_cmd: str, *args, **kwargs) -> str:
+        output = None
+        data = {}
+        out_func = {'settings': dict_to_str, 'get': dict_to_str}
+
+        if first_cmd == 'settings':
+            data = self.get_settings()
+        elif first_cmd == 'get':
+            data = {name: getattr(self, name) for name in args}
+
+        if first_cmd in out_func:
+            output = out_func[first_cmd](data)
+        return output
