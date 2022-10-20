@@ -98,3 +98,36 @@ def cmd_join(cmd, args, kwargs, bool_true=False, bool_false=False):
     if dres:
         res.append(' '.join(dres))
     return ' '.join(res)
+
+
+def path_relative(path):
+    return path[0] == '.'
+
+
+def path_join(path1, path2, sys_type):
+    sys_symbol = '\\' if sys_type == 'win' else '/'
+    if sys_type == 'win':
+        path1 = path1.replace('/', sys_symbol)
+        path2 = path2.replace('/', sys_symbol)
+    else:
+        path1 = path1.replace('\\', sys_symbol)
+        path2 = path2.replace('\\', sys_symbol)
+    path1_arr = path1.split(sys_symbol)
+    path2_arr = path2.split(sys_symbol)
+    if path1_arr[-1] == '':
+        path1_arr = path1_arr[:-1]
+    if path2_arr[-1] == '':
+        path2_arr = path2_arr[:-1]
+    ind, idx_double = 0, 0
+    while ind < len(path2_arr) and path2_arr[ind][0] == '.':
+        if path2_arr[ind] == '..':
+            idx_double += 1
+        ind += 1
+    if idx_double > 0:
+        path1_arr = path1_arr[:-idx_double]
+    if ind > 0:
+        path2_arr = path2_arr[ind:]
+    if path2_arr:
+        return sys_symbol.join(path1_arr) + sys_symbol + sys_symbol.join(path2_arr)
+    else:
+        return sys_symbol.join(path1_arr)

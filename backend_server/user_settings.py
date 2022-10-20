@@ -2,7 +2,7 @@ from fabric import Connection
 from fabric.runners import Result
 
 from backend_server.config import tgconf, main_conf, DATA_DIR
-from backend_server.func import cmd_parser
+from backend_server.func import cmd_parser, path_relative, path_join
 from backend_server.file_change_tracking import FileChangeTracking
 
 
@@ -20,6 +20,8 @@ class UserSettings:
         self.decode = None
         self.lencode = None
         self.ldecode = None
+        self.sys = None
+        self.lsys = None
         self.tmp_file = FileChangeTracking(tmp_file=tgconf['data_path'])
         self.tmp_file.threshold1 = tgconf['threshold1']
         self.tmp_file.threshold2 = tgconf['threshold2']
@@ -40,11 +42,13 @@ class UserSettings:
         self.shell = server_conf.get('shell', None)
         self.encode = server_conf.get('encode', None)
         self.decode = server_conf.get('decode', None)
+        self.sys = server_conf.get('sys', None)
         self.stage = 'work_session'
 
     def set_local(self, local_conf: dict):
         self.lencode = local_conf.get('encode', None)
         self.ldecode = local_conf.get('decode', None)
+        self.lsys = local_conf.get('sys', None)
 
     def unconnect(self):
         if self.con:
@@ -56,6 +60,11 @@ class UserSettings:
     def set_attr_cmd(self, name: str, value: str) -> str:
         setattr(self, name, value)
         return f'{name}> {value}'
+
+    def set_attr_cd(self, name: str, value: str) -> str:
+        if path_relative(value):
+            value = path_join(getattr(self, name), value, getattr(self, 'lsys' if name[0] == 'l' else 'sys'))
+        return self.set_attr_cmd(name, value)
 
     @staticmethod
     def format_out(res: Result, mes_default: str = None) -> str:
@@ -81,7 +90,7 @@ class UserSettings:
         first_cmd = first_cmd.lower()
         main_cmd = 'run'
         if first_cmd in ['cd', 'lcd']:
-            return self.set_attr_cmd(first_cmd, text_cmd[-1]), None
+            return self.set_attr_cd(first_cmd, text_cmd[-1]), None
         elif first_cmd in ['pyenv', 'shell']:
             return self.set_attr_cmd(first_cmd, ' '.join(text_cmd[1:])), None
         elif first_cmd in ['cmd', 'get', 'put', 'local', 'sudo']:
@@ -94,6 +103,13 @@ class UserSettings:
         if main_cmd in ['local']:
             if self.shell:
                 kwargs['shell'] = self.shell
+        elif main_cmd in ['get', 'put']:
+            pref0 = 'l' if main_cmd == 'put' else ''
+            pref1 = 'l' if main_cmd == 'get' else ''
+            if len(args) > 0 and path_relative(args[0]):
+                args[0] = path_join(getattr(self, pref0 + 'cd'), args[0], getattr(self, pref0 + 'sys'))
+            if len(args) > 1 and path_relative(args[1]):
+                args[1] = path_join(getattr(self, pref1 + 'cd'), args[1], getattr(self, pref1 + 'sys'))
 
         try:
             message_success = 'Operation completed!'
