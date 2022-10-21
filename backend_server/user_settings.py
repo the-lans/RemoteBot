@@ -60,6 +60,12 @@ class UserSettings:
         self.is_srv = False
         self.stage = 'select_server'
 
+    def menu_servers_next(self, shape: tuple):
+        self.menu_servers += shape[0] * shape[1]
+
+    def menu_servers_back(self, shape: tuple):
+        self.menu_servers -= shape[0] * shape[1]
+
     def set_attr_cmd(self, name: str, value: str) -> str:
         setattr(self, name, value)
         return f'{name}> {value}'

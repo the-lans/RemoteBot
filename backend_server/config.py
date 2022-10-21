@@ -29,6 +29,8 @@ def read_tgconfig(filename: str) -> dict:
         'data_path': cfg.get('DEFAULT', 'data_path'),
         'threshold1': cfg.getint('DEFAULT', 'threshold1'),
         'threshold2': cfg.getint('DEFAULT', 'threshold2'),
+        'menu_servers': cfg.get('DEFAULT', 'menu_servers'),
+        'menu_servers_prefix': cfg.get('DEFAULT', 'menu_servers_prefix'),
     }
     return conf
 
@@ -53,6 +55,8 @@ tgconf = read_tgconfig(PATH_TGCONFIG)
 tgconf['threshold1'] = tgconf.get('threshold1', 50)
 tgconf['threshold2'] = tgconf.get('threshold2', 70)
 tgconf['data_path'] = tgconf.get('data_path', './data')
+tgconf['menu_servers'] = tuple(map(int, tgconf.get('menu_servers', '2,1').split(',')))
+tgconf['menu_servers_prefix'] = tgconf.get('menu_servers_prefix', '').strip('\'')
 
 main_conf = read_main_config(PATH_MAIN_CONF)
 for server_conf in main_conf['servers']:

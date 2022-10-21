@@ -1,6 +1,6 @@
 from telebot import types
 
-from backend_server.config import tgbot, main_conf
+from backend_server.config import tgbot, tgconf, main_conf
 from backend_server.func import group_elements, break_into_blocks
 from backend_server.func_bot import bot_send_file
 from backend_server.user_settings import UserSettings
@@ -9,20 +9,39 @@ current_user = UserSettings()
 def_commands = ['cd', 'lcd', 'pyenv', 'shell', 'cmd', 'get', 'put', 'local', 'sudo', 'bot']
 
 
+def make_menu_server():
+    prefix, groups = tgconf['menu_servers_prefix'], tgconf['menu_servers']
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    items = [types.KeyboardButton(prefix + server['name']) for server in main_conf['servers']]
+    button_back = types.KeyboardButton('< Back')
+    button_next = types.KeyboardButton('Next >')
+    menu = group_elements(items, groups, current_user.menu_servers, button_back, button_next)
+    for item in menu:
+        markup.add(*item)
+    return markup
+
+
 def command_select_server(chat_id: int, message_text: str):
-    prefix = '💡 '
-    local_name = prefix + 'local'
-    items = [prefix + server['name'] for server in main_conf['servers']]
-    local_conf = main_conf['servers'][items.index(local_name)]
-    current_user.set_local(local_conf)
-    server_conf = local_conf if message_text == local_name else main_conf['servers'][items.index(message_text)]
-    current_user.connect(server_conf)
-    markup = types.ReplyKeyboardRemove()
-    if message_text == local_name:
-        message_send = f"Connection established: local"
+    prefix, groups = tgconf['menu_servers_prefix'], tgconf['menu_servers']
+    if message_text in ['< Back', 'Next >']:
+        menu_servers_funcs = {'< Back': current_user.menu_servers_back, 'Next >': current_user.menu_servers_next}
+        menu_servers_funcs[message_text](groups)
+        idx0 = current_user.menu_servers + 1
+        idx1 = min(current_user.menu_servers + groups[0] * groups[1], len(main_conf['servers']))
+        tgbot.send_message(chat_id, f'{message_text}  {idx0}-{idx1}', reply_markup=make_menu_server())
     else:
-        message_send = f"Connection established: {server_conf['user']}@{server_conf['ip']}:{server_conf['port']}"
-    tgbot.send_message(chat_id, message_send, reply_markup=markup)
+        local_name = prefix + 'local'
+        items = [prefix + server['name'] for server in main_conf['servers']]
+        local_conf = main_conf['servers'][items.index(local_name)]
+        current_user.set_local(local_conf)
+        server_conf = local_conf if message_text == local_name else main_conf['servers'][items.index(message_text)]
+        current_user.connect(server_conf)
+        markup = types.ReplyKeyboardRemove()
+        if message_text == local_name:
+            message_send = f"Connection established: local"
+        else:
+            message_send = f"Connection established: {server_conf['user']}@{server_conf['ip']}:{server_conf['port']}"
+        tgbot.send_message(chat_id, message_send, reply_markup=markup)
 
 
 def command_work_session(chat_id: int, message_text: str):
@@ -58,17 +77,6 @@ handle_text_funcs = {
     'work_session': command_work_session,
     'bot_edit': command_bot_edit,
 }
-
-
-def make_menu_server():
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    items = [types.KeyboardButton('💡 ' + server['name']) for server in main_conf['servers']]
-    button_back = types.KeyboardButton('< Back')
-    button_next = types.KeyboardButton('Next >')
-    menu = group_elements(items, (2, 2), current_user.menu_servers, button_back, button_next)
-    for item in menu:
-        markup.add(*item)
-    return markup
 
 
 @tgbot.message_handler(commands=['start'])
