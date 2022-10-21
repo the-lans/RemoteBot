@@ -66,8 +66,8 @@ def cmd_parser(text):
     is_param2, is_param_new, is_param_new2 = False, False, False
     args, kwargs = [], {}
     for item in text_cmd:
-        is_param_new = (item[:1] == '-')
-        is_param_new2 = (item[:2] == '--')
+        is_param_new = item[:1] == '-'
+        is_param_new2 = item[:2] == '--'
         if is_param_new and not is_param_new2:
             param = get_param(item)
             kwargs[param] = True

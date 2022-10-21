@@ -40,7 +40,24 @@ def command_work_session(chat_id: int, message_text: str):
                 tgbot.send_message(chat_id, message_send, reply_markup=markup)
 
 
-handle_text_funcs = {'select_server': command_select_server, 'work_session': command_work_session}
+def command_bot_edit(chat_id: int, message_text: str):
+    lines = message_text.split('\n')
+    if lines[-1] in [':q', '\\q']:
+        text = '\n'.join(lines[:-1]) + '\n'
+        current_user.text_edit = current_user.text_edit + '\n' + text if current_user.text_edit else text
+        current_user.stage = 'work_session'
+        tgbot.send_message(chat_id, 'End text edit.')
+    else:
+        current_user.text_edit = (
+            current_user.text_edit + '\n' + message_text if current_user.text_edit else message_text
+        )
+
+
+handle_text_funcs = {
+    'select_server': command_select_server,
+    'work_session': command_work_session,
+    'bot_edit': command_bot_edit,
+}
 
 
 def make_menu_server():

@@ -3,7 +3,7 @@ from fabric import Connection
 from fabric.runners import Result
 
 from backend_server.config import tgconf, main_conf, DATA_DIR
-from backend_server.func import cmd_parser, path_relative, path_join, dict_to_str
+from backend_server.func import cmd_parser, path_relative, path_join, dict_to_str, file_write
 from backend_server.func_bot import bot_send_file
 from backend_server.file_change_tracking import FileChangeTracking
 
@@ -27,6 +27,7 @@ class UserSettings:
         self.tmp_file = FileChangeTracking(tmp_file=tgconf['data_path'])
         self.tmp_file.threshold1 = tgconf['threshold1']
         self.tmp_file.threshold2 = tgconf['threshold2']
+        self.text_edit = ''
 
     def connect(self, server_conf: dict):
         self.is_srv = False
@@ -179,7 +180,25 @@ class UserSettings:
                 self.con.get(args[0], join(DATA_DIR, filename))
                 bot_send_file(chat_id, join(DATA_DIR, filename))
             output = message_success
+        elif first_cmd == 'edit':
+            self.text_edit = ''
+            self.stage = 'bot_edit'
+            output = 'Begin text edit.'
+        elif first_cmd == 'push':
+            is_local = 'l' in kwargs and kwargs['l']
+            is_append = 'a' in kwargs and kwargs['a']
+            args = self.get_absolute_path(args, is_local)
+            filename = basename(args[0])
+            if is_local:
+                self.save_text_edit(args[0], is_append)
+            else:
+                self.save_text_edit(join(DATA_DIR, filename), is_append)
+                self.con.put(join(DATA_DIR, filename), args[0])
+            output = message_success
 
         if first_cmd in out_func:
             output = out_func[first_cmd](data)
         return output
+
+    def save_text_edit(self, filename: str, is_append=False):
+        file_write(filename, self.text_edit, is_append)
