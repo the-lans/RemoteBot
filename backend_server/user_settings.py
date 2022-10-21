@@ -119,7 +119,7 @@ class UserSettings:
             if main_cmd in ['run', 'cmd', 'sudo']:
                 cmd_func = {'run': self.con.run, 'cmd': self.con.run, 'sudo': self.con.sudo}
                 with self.con.cd(self.cd):
-                    com = f'{self.pyenv} && {shell_com}' if first_cmd in main_conf['commands_pyenv'] else shell_com
+                    com = f'{self.pyenv}\n{shell_com}' if first_cmd in main_conf['commands_pyenv'] else shell_com
                     result = cmd_func[main_cmd](com, hide=True, asynchronous=False)
                     return self.format_out(result, message_success), srv_type
             elif main_cmd in ['get', 'put', 'local']:

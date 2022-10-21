@@ -105,6 +105,26 @@ def cmd_join(cmd, args, kwargs, bool_true=True, bool_false=True):
     return ' '.join(res)
 
 
+def break_into_blocks(text: str, split_words: list):
+    lines = text.split('\n')
+    result = []
+    block = []
+    for line in lines:
+        tline = line.strip()
+        words = tline.split(' ')
+        if tline:
+            if words[0].lower() in split_words:
+                if block:
+                    result.append('\n'.join(block))
+                    block = []
+                result.append(tline)
+            else:
+                block.append(tline)
+    if block:
+        result.append('\n'.join(block))
+    return result
+
+
 def path_relative(path):
     return path[0] == '.'
 
