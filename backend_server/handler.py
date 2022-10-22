@@ -45,9 +45,7 @@ def command_select_server(chat_id: int, message_text: str):
     if message_text in ['< Back', 'Next >']:
         menu_servers_funcs = {'< Back': current_user.menu_servers_back, 'Next >': current_user.menu_servers_next}
         menu_servers_funcs[message_text](groups)
-        idx0 = current_user.menu_servers + 1
-        idx1 = min(current_user.menu_servers + groups[0] * groups[1], len(main_conf['servers']))
-        tgbot.send_message(chat_id, f'{message_text}  {idx0}-{idx1}', reply_markup=make_menu_server())
+        tgbot.send_message(chat_id, f'{message_text}  {current_user.menu_servers + 1}', reply_markup=make_menu_server())
     else:
         local_name = prefix + 'local'
         items = [prefix + server['name'] for server in main_conf['servers']]

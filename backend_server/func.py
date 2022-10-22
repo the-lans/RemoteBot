@@ -1,9 +1,10 @@
 def group_elements(items, shape, menu_servers, item_back, item_next, add_items=None):
-    num_count = len(items) - menu_servers
+    count = menu_servers * shape[0] * shape[1]
+    num_count = len(items) - count
     num_items_count = shape[0] * shape[1]
 
     markup = []
-    idx = menu_servers
+    idx = count
     if len(items) < num_items_count:
         num_cols = (num_count - 1) // shape[0] + 1
         num_residue = num_cols * shape[0] - num_count

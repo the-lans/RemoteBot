@@ -63,20 +63,23 @@ class UserSettings:
         self.stage = 'select_server'
 
     def menu_servers_next(self, shape: tuple):
-        num = shape[0] * shape[1]
-        page = ((len(main_conf['servers']) - 1) // num)
-        self.menu_servers = min(self.menu_servers + num, page * num)
+        self.menu_servers = min(self.menu_servers + 1, self.menu_pages_servers(shape) + 1)
 
     def menu_servers_back(self, shape: tuple):
-        self.menu_servers = max(0, self.menu_servers - shape[0] * shape[1])
+        self.menu_servers = max(0, self.menu_servers - 1)
+
+    @staticmethod
+    def menu_pages_servers(shape: tuple):
+        return (len(main_conf['servers']) - 1) // (shape[0] * shape[1]) + 1
 
     def menu_com_history_next(self, shape: tuple):
-        num = shape[0] * shape[1]
-        page = ((len(self.commands_history) - 1) // num)
-        self.menu_com_history = min(self.menu_com_history + num, page * num)
+        self.menu_com_history = min(self.menu_com_history + 1, self.menu_pages_com_history(shape) - 1)
 
     def menu_com_history_back(self, shape: tuple):
-        self.menu_com_history = max(0, self.menu_com_history - shape[0] * shape[1])
+        self.menu_com_history = max(0, self.menu_com_history - 1)
+
+    def menu_pages_com_history(self, shape: tuple):
+        return (len(self.commands_history) - 1) // (shape[0] * shape[1]) + 1
 
     def set_attr_cmd(self, name: str, value: str) -> str:
         setattr(self, name, value)
@@ -219,9 +222,7 @@ class UserSettings:
                 self.menu_com_history_next(groups)
             else:
                 self.menu_com_history_back(groups)
-            idx0 = self.menu_com_history + 1
-            idx1 = min(self.menu_com_history + groups[0] * groups[1], len(self.commands_history))
-            output = f'{first_cmd}: {idx0}-{idx1}'
+            output = f'{first_cmd}: {self.menu_com_history + 1}'
 
         if first_cmd in out_func:
             output = out_func[first_cmd](data)
@@ -234,7 +235,6 @@ class UserSettings:
         for item in message_text.split('\n'):
             if item.lower() not in ['bot next', 'bot back']:
                 self.commands_history.insert(0, item)
-                self.menu_com_history = 0
         self.commands_history = list(dict.fromkeys(self.commands_history))
         if len(self.commands_history) > main_conf['commands_history']:
             self.commands_history = self.commands_history[:main_conf['commands_history']]
