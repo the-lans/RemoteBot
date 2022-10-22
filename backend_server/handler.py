@@ -1,7 +1,7 @@
 from telebot import types
 
 from backend_server.config import tgbot, tgconf, main_conf
-from backend_server.func import group_elements, break_into_blocks
+from backend_server.func import group_elements, break_into_blocks, str_del_startswith
 from backend_server.func_bot import bot_send_file
 from backend_server.user_settings import UserSettings
 
@@ -9,16 +9,35 @@ current_user = UserSettings()
 def_commands = ['cd', 'lcd', 'pyenv', 'shell', 'cmd', 'get', 'put', 'local', 'sudo', 'bot']
 
 
-def make_menu_server():
-    prefix, groups = tgconf['menu_servers_prefix'], tgconf['menu_servers']
+def make_menu_reply(prefix, groups, items, menu_index, text_back='< Back', text_next='Next >', add_items=None):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    items = [types.KeyboardButton(prefix + server['name']) for server in main_conf['servers']]
-    button_back = types.KeyboardButton('< Back')
-    button_next = types.KeyboardButton('Next >')
-    menu = group_elements(items, groups, current_user.menu_servers, button_back, button_next)
-    for item in menu:
-        markup.add(*item)
+    buttons = [types.KeyboardButton(prefix + item) for item in items]
+    button_back = types.KeyboardButton(text_back)
+    button_next = types.KeyboardButton(text_next)
+    menu = group_elements(buttons, groups, menu_index, button_back, button_next, add_items)
+    if len(menu) > 0:
+        for item in menu:
+            markup.add(*item)
+    else:
+        markup = types.ReplyKeyboardRemove()
     return markup
+
+
+def make_menu_com_history():
+    return make_menu_reply(
+        tgconf['menu_commands_prefix'],
+        tgconf['menu_commands'],
+        current_user.commands_history,
+        current_user.menu_com_history,
+        'bot back',
+        'bot next',
+        add_items=['/unconnect'],
+    )
+
+
+def make_menu_server():
+    items = [server['name'] for server in main_conf['servers']]
+    return make_menu_reply(tgconf['menu_servers_prefix'], tgconf['menu_servers'], items, current_user.menu_servers)
 
 
 def command_select_server(chat_id: int, message_text: str):
@@ -36,7 +55,7 @@ def command_select_server(chat_id: int, message_text: str):
         current_user.set_local(local_conf)
         server_conf = local_conf if message_text == local_name else main_conf['servers'][items.index(message_text)]
         current_user.connect(server_conf)
-        markup = types.ReplyKeyboardRemove()
+        markup = make_menu_com_history() if tgconf['menu_commands_exists'] else types.ReplyKeyboardRemove()
         if message_text == local_name:
             message_send = f"Connection established: local"
         else:
@@ -45,11 +64,13 @@ def command_select_server(chat_id: int, message_text: str):
 
 
 def command_work_session(chat_id: int, message_text: str):
+    message_text = str_del_startswith(message_text, tgconf['menu_commands_prefix'])
+    current_user.add_command_history(message_text)
     message_lst = break_into_blocks(message_text, def_commands)
     for message_item in message_lst:
         output, srv_type = current_user.con_send(chat_id, message_item)
         if output:
-            markup = types.ReplyKeyboardRemove()
+            markup = make_menu_com_history() if tgconf['menu_commands_exists'] else types.ReplyKeyboardRemove()
             message_send, tmp_file = current_user.set_content(output, srv_type)
             if tmp_file:
                 msg = bot_send_file(chat_id, tmp_file)

@@ -11,6 +11,7 @@ from backend_server.file_change_tracking import FileChangeTracking
 class UserSettings:
     def __init__(self):
         self.menu_servers = 0
+        self.menu_com_history = 0
         self.stage = None
         self.con = None
         self.is_srv = False
@@ -28,6 +29,7 @@ class UserSettings:
         self.tmp_file.threshold1 = tgconf['threshold1']
         self.tmp_file.threshold2 = tgconf['threshold2']
         self.text_edit = ''
+        self.commands_history = []
 
     def connect(self, server_conf: dict):
         self.is_srv = False
@@ -61,10 +63,20 @@ class UserSettings:
         self.stage = 'select_server'
 
     def menu_servers_next(self, shape: tuple):
-        self.menu_servers += shape[0] * shape[1]
+        num = shape[0] * shape[1]
+        page = ((len(main_conf['servers']) - 1) // num)
+        self.menu_servers = min(self.menu_servers + num, page * num)
 
     def menu_servers_back(self, shape: tuple):
-        self.menu_servers -= shape[0] * shape[1]
+        self.menu_servers = max(0, self.menu_servers - shape[0] * shape[1])
+
+    def menu_com_history_next(self, shape: tuple):
+        num = shape[0] * shape[1]
+        page = ((len(self.commands_history) - 1) // num)
+        self.menu_com_history = min(self.menu_com_history + num, page * num)
+
+    def menu_com_history_back(self, shape: tuple):
+        self.menu_com_history = max(0, self.menu_com_history - shape[0] * shape[1])
 
     def set_attr_cmd(self, name: str, value: str) -> str:
         setattr(self, name, value)
@@ -201,6 +213,15 @@ class UserSettings:
                 self.save_text_edit(join(DATA_DIR, filename), is_append)
                 self.con.put(join(DATA_DIR, filename), args[0])
             output = message_success
+        elif first_cmd in ['next', 'back']:
+            groups = tgconf['menu_commands']
+            if first_cmd == 'next':
+                self.menu_com_history_next(groups)
+            else:
+                self.menu_com_history_back(groups)
+            idx0 = self.menu_com_history + 1
+            idx1 = min(self.menu_com_history + groups[0] * groups[1], len(self.commands_history))
+            output = f'{first_cmd}: {idx0}-{idx1}'
 
         if first_cmd in out_func:
             output = out_func[first_cmd](data)
@@ -208,3 +229,12 @@ class UserSettings:
 
     def save_text_edit(self, filename: str, is_append=False):
         file_write(filename, self.text_edit, is_append)
+
+    def add_command_history(self, message_text: str):
+        for item in message_text.split('\n'):
+            if item.lower() not in ['bot next', 'bot back']:
+                self.commands_history.insert(0, item)
+                self.menu_com_history = 0
+        self.commands_history = list(dict.fromkeys(self.commands_history))
+        if len(self.commands_history) > main_conf['commands_history']:
+            self.commands_history = self.commands_history[:main_conf['commands_history']]

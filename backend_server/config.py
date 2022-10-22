@@ -31,6 +31,9 @@ def read_tgconfig(filename: str) -> dict:
         'threshold2': cfg.getint('DEFAULT', 'threshold2'),
         'menu_servers': cfg.get('DEFAULT', 'menu_servers'),
         'menu_servers_prefix': cfg.get('DEFAULT', 'menu_servers_prefix'),
+        'menu_commands': cfg.get('DEFAULT', 'menu_commands'),
+        'menu_commands_prefix': cfg.get('DEFAULT', 'menu_commands_prefix'),
+        'menu_commands_exists': cfg.getboolean('DEFAULT', 'menu_commands_exists'),
     }
     return conf
 
@@ -48,15 +51,27 @@ def read_main_config(filename: str) -> dict:
         settings = {}
     res['servers'] = settings.get('servers', [])
     res['commands_pyenv'] = settings.get('commands_pyenv', [])
+    res['commands_history'] = settings.get('commands_history', 4)
     return res
+
+
+def tgconf_list_to_type(name, type, default=''):
+    return tuple(map(lambda item: type(item.strip()), tgconf.get(name, default).split(',')))
+
+
+def tgconf_str_quotes(name):
+    return tgconf.get(name, '').strip('\'')
 
 
 tgconf = read_tgconfig(PATH_TGCONFIG)
 tgconf['threshold1'] = tgconf.get('threshold1', 50)
 tgconf['threshold2'] = tgconf.get('threshold2', 70)
 tgconf['data_path'] = tgconf.get('data_path', './data')
-tgconf['menu_servers'] = tuple(map(int, tgconf.get('menu_servers', '2,1').split(',')))
-tgconf['menu_servers_prefix'] = tgconf.get('menu_servers_prefix', '').strip('\'')
+tgconf['menu_servers'] = tgconf_list_to_type('menu_servers', int, '2,1')
+tgconf['menu_servers_prefix'] = tgconf_str_quotes('menu_servers_prefix')
+tgconf['menu_commands'] = tgconf_list_to_type('menu_commands', int, '2,2')
+tgconf['menu_commands_prefix'] = tgconf_str_quotes('menu_commands_prefix')
+tgconf['menu_commands_exists'] = tgconf.get('menu_commands_exists', False)
 
 main_conf = read_main_config(PATH_MAIN_CONF)
 for server_conf in main_conf['servers']:

@@ -1,4 +1,4 @@
-def group_elements(items, shape, menu_servers, item_back, item_next):
+def group_elements(items, shape, menu_servers, item_back, item_next, add_items=None):
     num_count = len(items) - menu_servers
     num_items_count = shape[0] * shape[1]
 
@@ -26,20 +26,24 @@ def group_elements(items, shape, menu_servers, item_back, item_next):
         for _ in range(shape[0]):
             markup_buttons = []
             for _ in range(shape[1]):
-                markup_buttons.append(items[idx])
-                if idx >= len(items) - 1:
+                if idx >= len(items):
                     break
+                markup_buttons.append(items[idx])
                 idx += 1
             if markup_buttons:
                 markup.append(markup_buttons)
-            if idx >= len(items) - 1:
+            if idx >= len(items):
                 break
 
     markup_bottom = []
     if menu_servers > 0:
         markup_bottom.append(item_back)
+    if add_items:
+        for item in add_items:
+            markup_bottom.append(item)
     if num_items_count < num_count:
         markup_bottom.append(item_next)
+
     if markup_bottom:
         markup.append(markup_bottom)
     return markup
@@ -160,3 +164,9 @@ def path_join(path1, path2, sys_type):
 
 def dict_to_str(data: dict, custom: str = '{0}: {1}') -> str:
     return '\n'.join([custom.format(key, val) for key, val in data.items()])
+
+
+def str_del_startswith(val: str, template: str):
+    if val.startswith(template):
+        val = val[len(template):]
+    return val
