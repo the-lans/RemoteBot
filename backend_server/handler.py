@@ -31,7 +31,6 @@ def make_menu_com_history():
         current_user.menu_com_history,
         'bot back',
         'bot next',
-        add_items=['/unconnect'],
     )
 
 
@@ -64,6 +63,7 @@ def command_select_server(chat_id: int, message_text: str):
 def command_work_session(chat_id: int, message_text: str):
     message_text = str_del_startswith(message_text, tgconf['menu_commands_prefix'])
     current_user.add_command_history(message_text)
+    current_user.add_srv_history(message_text)
     message_lst = break_into_blocks(message_text, def_commands)
     for message_item in message_lst:
         output, srv_type = current_user.con_send(chat_id, message_item)

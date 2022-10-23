@@ -30,6 +30,7 @@ class UserSettings:
         self.tmp_file.threshold2 = tgconf['threshold2']
         self.text_edit = ''
         self.commands_history = []
+        self.srv_history = []
 
     def connect(self, server_conf: dict):
         self.is_srv = False
@@ -48,6 +49,7 @@ class UserSettings:
         self.encode = server_conf.get('encode', None)
         self.decode = server_conf.get('decode', None)
         self.sys = server_conf.get('sys', None)
+        self.srv_history = []
         self.stage = 'work_session'
 
     def set_local(self, local_conf: dict):
@@ -60,6 +62,7 @@ class UserSettings:
             self.con.close()
         self.con = None
         self.is_srv = False
+        self.srv_history = []
         self.stage = 'select_server'
 
     def menu_servers_next(self, shape: tuple):
@@ -223,6 +226,9 @@ class UserSettings:
             else:
                 self.menu_com_history_back(groups)
             output = f'{first_cmd}: {self.menu_com_history + 1}'
+        elif first_cmd == 'history':
+            data = {'srv': self.srv_history, 'commands': self.commands_history}
+            output = 'Commands history:\n' + '\n'.join(data[args[0]])
 
         if first_cmd in out_func:
             output = out_func[first_cmd](data)
@@ -238,3 +244,8 @@ class UserSettings:
         self.commands_history = list(dict.fromkeys(self.commands_history))
         if len(self.commands_history) > main_conf['commands_history']:
             self.commands_history = self.commands_history[:main_conf['commands_history']]
+
+    def add_srv_history(self, message_text: str):
+        for item in message_text.split('\n'):
+            if item.lower() not in ['bot next', 'bot back']:
+                self.srv_history.append(item)
