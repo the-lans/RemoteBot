@@ -71,8 +71,7 @@ def command_work_session(chat_id: int, message_text: str):
             markup = make_menu_com_history() if tgconf['menu_commands_exists'] else types.ReplyKeyboardRemove()
             message_send, tmp_file = current_user.set_content(output, srv_type)
             if tmp_file:
-                msg = bot_send_file(chat_id, tmp_file)
-                # tgbot.send_message(chat_id, message_send, reply_markup=markup, reply_to_message_id=msg.message_id)
+                bot_send_file(chat_id, tmp_file)
                 tgbot.send_message(chat_id, message_send + ' ...', reply_markup=markup)
             else:
                 tgbot.send_message(chat_id, message_send, reply_markup=markup)

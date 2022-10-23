@@ -22,5 +22,6 @@ commands_pyenv:
   - pip
   - python
   - conda
+  - fab
 
 commands_history: 30

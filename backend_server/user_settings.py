@@ -1,4 +1,4 @@
-from os.path import join, basename, splitext
+from os.path import join, basename
 from fabric import Connection
 from fabric.runners import Result
 
@@ -25,7 +25,7 @@ class UserSettings:
         self.ldecode = None
         self.sys = None
         self.lsys = None
-        self.tmp_file = FileChangeTracking(tmp_file=tgconf['data_path'])
+        self.tmp_file = FileChangeTracking(tmp_file=DATA_DIR)
         self.tmp_file.threshold1 = tgconf['threshold1']
         self.tmp_file.threshold2 = tgconf['threshold2']
         self.text_edit = ''

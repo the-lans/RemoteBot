@@ -26,7 +26,6 @@ def read_tgconfig(filename: str) -> dict:
         'token': cfg.get('DEFAULT', 'token'),
         'count_exeption': cfg.getint('DEFAULT', 'count_exeption'),
         'sleep_exeption': cfg.getfloat('DEFAULT', 'sleep_exeption'),
-        'data_path': cfg.get('DEFAULT', 'data_path'),
         'threshold1': cfg.getint('DEFAULT', 'threshold1'),
         'threshold2': cfg.getint('DEFAULT', 'threshold2'),
         'menu_servers': cfg.get('DEFAULT', 'menu_servers'),
@@ -66,7 +65,6 @@ def tgconf_str_quotes(name):
 tgconf = read_tgconfig(PATH_TGCONFIG)
 tgconf['threshold1'] = tgconf.get('threshold1', 50)
 tgconf['threshold2'] = tgconf.get('threshold2', 70)
-tgconf['data_path'] = tgconf.get('data_path', './data')
 tgconf['menu_servers'] = tgconf_list_to_type('menu_servers', int, '2,1')
 tgconf['menu_servers_prefix'] = tgconf_str_quotes('menu_servers_prefix')
 tgconf['menu_commands'] = tgconf_list_to_type('menu_commands', int, '2,2')
