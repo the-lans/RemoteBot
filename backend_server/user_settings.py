@@ -31,6 +31,8 @@ class UserSettings:
         self.text_edit = ''
         self.commands_history = []
         self.srv_history = []
+        self.current_server = {}
+        self.local_server = {}
 
     def connect(self, server_conf: dict):
         self.is_srv = False
@@ -50,12 +52,14 @@ class UserSettings:
         self.decode = server_conf.get('decode', None)
         self.sys = server_conf.get('sys', None)
         self.srv_history = []
+        self.current_server = server_conf
         self.stage = 'work_session'
 
     def set_local(self, local_conf: dict):
         self.lencode = local_conf.get('encode', None)
         self.ldecode = local_conf.get('decode', None)
         self.lsys = local_conf.get('sys', None)
+        self.local_server = local_conf
 
     def unconnect(self):
         if self.con:
@@ -63,6 +67,8 @@ class UserSettings:
         self.con = None
         self.is_srv = False
         self.srv_history = []
+        self.current_server = {}
+        self.local_server = {}
         self.stage = 'select_server'
 
     def menu_servers_next(self, shape: tuple):
@@ -229,6 +235,13 @@ class UserSettings:
         elif first_cmd == 'history':
             data = {'srv': self.srv_history, 'commands': self.commands_history}
             output = 'Commands history:\n' + '\n'.join(data[args[0]])
+        elif first_cmd == 'fabfile':
+            args = (
+                path_join(self.lcd, self.current_server['fabfile'], self.lsys),
+                path_join(self.cd, 'fabfile.py', self.sys),
+            )
+            self.con.put(*args, **kwargs)
+            output = message_success
 
         if first_cmd in out_func:
             output = out_func[first_cmd](data)
@@ -243,7 +256,7 @@ class UserSettings:
                 self.commands_history.insert(0, item)
         self.commands_history = list(dict.fromkeys(self.commands_history))
         if len(self.commands_history) > main_conf['commands_history']:
-            self.commands_history = self.commands_history[:main_conf['commands_history']]
+            self.commands_history = self.commands_history[: main_conf['commands_history']]
 
     def add_srv_history(self, message_text: str):
         for item in message_text.split('\n'):

@@ -169,5 +169,5 @@ def dict_to_str(data: dict, custom: str = '{0}: {1}') -> str:
 
 def str_del_startswith(val: str, template: str):
     if val.startswith(template):
-        val = val[len(template):]
+        val = val[len(template) :]
     return val

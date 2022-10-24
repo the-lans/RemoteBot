@@ -15,6 +15,7 @@ servers:
     sys: lin
     cd: '/var/my_project'
     pyenv: 'source /var/venv3.8/bin/activate'
+    fabfile: 'fab/fabfile.py'
     tracking:
       - '/var/log/messages'
 
