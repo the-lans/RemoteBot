@@ -26,3 +26,6 @@ commands_pyenv:
   - fab
 
 commands_history: 30
+
+commands_fab_ext:
+  - screen

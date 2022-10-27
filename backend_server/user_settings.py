@@ -110,15 +110,19 @@ class UserSettings:
         return 'local' if main_cmd == 'local' or not self.is_srv else 'server'
 
     def con_send(self, chat_id: int, text: str) -> (str, str):
+        # Check text
         text = text.strip()
         if not text:
             return None, None
 
+        # Local server
         text_cmd = text.split(' ')
-        if not self.is_srv and text_cmd[0].lower() not in ['cmd', 'get', 'put', 'local', 'sudo', 'bot']:
+        first_cmd = text_cmd[0]
+        if not self.is_srv and first_cmd.lower() not in ['cmd', 'get', 'put', 'local', 'sudo', 'bot']:
             text = f'local {text}'
             text_cmd.insert(0, 'local')
 
+        # First command -> Set attr or (main_cmd, shell_com)
         first_cmd, args, kwargs = cmd_parser(text)
         first_cmd = first_cmd.lower()
         main_cmd = 'run'
@@ -133,6 +137,7 @@ class UserSettings:
         else:
             shell_com = text
 
+        # Args & kwargs
         if main_cmd in ['local']:
             if self.shell:
                 kwargs['shell'] = self.shell
@@ -144,14 +149,20 @@ class UserSettings:
             if len(args) > 1 and path_relative(args[1]):
                 args[1] = path_join(getattr(self, pref1 + 'cd'), args[1], getattr(self, pref1 + 'sys'))
 
+        # Commands fab
+        second_cmd = args[0] if len(args) > 0 else None
+        if first_cmd == 'fab' and second_cmd in main_conf['commands_fab_ext']:
+            shell_com = f"{shell_com} --pathcd '{self.cd}' --pyenv '{self.pyenv}'"
+
+        # Running
         try:
             message_success = 'Operation completed!'
             srv_type = self.get_type_server(main_cmd)
             if main_cmd in ['run', 'cmd', 'sudo']:
                 cmd_func = {'run': self.con.run, 'cmd': self.con.run, 'sudo': self.con.sudo}
                 with self.con.cd(self.cd):
-                    com = f'{self.pyenv}\n{shell_com}' if first_cmd in main_conf['commands_pyenv'] else shell_com
-                    result = cmd_func[main_cmd](com, hide=True, asynchronous=False)
+                    com = f"{self.pyenv}\n{shell_com}" if first_cmd in main_conf['commands_pyenv'] else shell_com
+                    result = cmd_func[main_cmd](com, hide=True, warn=True, asynchronous=False)
                     return self.format_out(result, message_success), srv_type
             elif main_cmd in ['get', 'put', 'local']:
                 cmd_func = {'get': self.con.get, 'put': self.con.put, 'local': self.con.local}
