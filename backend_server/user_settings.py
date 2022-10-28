@@ -3,7 +3,7 @@ from fabric import Connection
 from fabric.runners import Result
 
 from backend_server.config import tgconf, main_conf, DATA_DIR
-from backend_server.func import cmd_parser, path_relative, path_join, dict_to_str, file_write
+from backend_server.func import cmd_parser, path_relative, path_join, dict_to_str, file_write, str_to_bool
 from backend_server.func_bot import bot_send_file
 from backend_server.file_change_tracking import FileChangeTracking
 
@@ -25,6 +25,7 @@ class UserSettings:
         self.ldecode = None
         self.sys = None
         self.lsys = None
+        self.asynchronous = False
         self.tmp_file = FileChangeTracking(tmp_file=DATA_DIR)
         self.tmp_file.threshold1 = tgconf['threshold1']
         self.tmp_file.threshold2 = tgconf['threshold2']
@@ -162,7 +163,9 @@ class UserSettings:
                 cmd_func = {'run': self.con.run, 'cmd': self.con.run, 'sudo': self.con.sudo}
                 with self.con.cd(self.cd):
                     com = f"{self.pyenv}\n{shell_com}" if first_cmd in main_conf['commands_pyenv'] else shell_com
-                    result = cmd_func[main_cmd](com, hide=True, warn=True, asynchronous=False)
+                    result = cmd_func[main_cmd](com, hide=True, warn=True, asynchronous=self.asynchronous)
+                    if self.asynchronous:
+                        message_success = f'{message_success} Async enabled.'
                     return self.format_out(result, message_success), srv_type
             elif main_cmd in ['get', 'put', 'local']:
                 cmd_func = {'get': self.con.get, 'put': self.con.put, 'local': self.con.local}
@@ -252,6 +255,9 @@ class UserSettings:
                 path_join(self.cd, 'fabfile.py', self.sys),
             )
             self.con.put(*args, **kwargs)
+            output = message_success
+        elif first_cmd == 'async':
+            self.asynchronous = str_to_bool(args[0]) if len(args) > 0 else not self.asynchronous
             output = message_success
 
         if first_cmd in out_func:

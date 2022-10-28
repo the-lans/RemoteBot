@@ -171,3 +171,14 @@ def str_del_startswith(val: str, template: str):
     if val.startswith(template):
         val = val[len(template) :]
     return val
+
+
+def str_to_bool(val):
+    if isinstance(val, bool):
+        return val
+    elif val.isnumeric():
+        return bool(int(val))
+    elif val and val[0].lower() in ('t', 'f'):
+        return val[0].lower() == 't'
+    else:
+        return bool(val)
