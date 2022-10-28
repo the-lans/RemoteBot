@@ -52,6 +52,7 @@ def read_main_config(filename: str) -> dict:
     res['commands_pyenv'] = settings.get('commands_pyenv', [])
     res['commands_fab_ext'] = settings.get('commands_fab_ext', [])
     res['commands_history'] = settings.get('commands_history', 4)
+    res['tasks'] = settings.get('tasks', False)
     return res
 
 

@@ -1,10 +1,11 @@
+from time import sleep
 from os.path import join, basename
 from fabric import Connection
 from fabric.runners import Result
 
 from backend_server.config import tgconf, main_conf, DATA_DIR
 from backend_server.func import cmd_parser, path_relative, path_join, dict_to_str, file_write, str_to_bool
-from backend_server.func_bot import bot_send_file
+from backend_server.func_bot import bot_send_file, send_content
 from backend_server.file_change_tracking import FileChangeTracking
 
 
@@ -34,6 +35,8 @@ class UserSettings:
         self.srv_history = []
         self.current_server = {}
         self.local_server = {}
+        self.tasks_process = []
+        self.markup = None
 
     def connect(self, server_conf: dict):
         self.is_srv = False
@@ -165,6 +168,7 @@ class UserSettings:
                     com = f"{self.pyenv}\n{shell_com}" if first_cmd in main_conf['commands_pyenv'] else shell_com
                     result = cmd_func[main_cmd](com, hide=True, warn=True, asynchronous=self.asynchronous)
                     if self.asynchronous:
+                        self.tasks_process.append(result)
                         message_success = f'{message_success} Async enabled.'
                     return self.format_out(result, message_success), srv_type
             elif main_cmd in ['get', 'put', 'local']:
@@ -259,6 +263,13 @@ class UserSettings:
         elif first_cmd == 'async':
             self.asynchronous = str_to_bool(args[0]) if len(args) > 0 else not self.asynchronous
             output = message_success
+        elif first_cmd == 'join':
+            while self.tasks_process:
+                task = self.tasks_process.pop()
+                sout = self.format_out(task.join(), message_success)
+                send_content(self, chat_id, sout, self.get_type_server('run'))
+                sleep(1)
+            output = 'End of job queue.'
 
         if first_cmd in out_func:
             output = out_func[first_cmd](data)

@@ -25,7 +25,8 @@ commands_pyenv:
   - conda
   - fab
 
-commands_history: 30
-
 commands_fab_ext:
   - screen
+
+commands_history: 30
+tasks: True

@@ -1,26 +1,12 @@
 from telebot import types
 
 from backend_server.config import tgbot, tgconf, main_conf
-from backend_server.func import group_elements, break_into_blocks, str_del_startswith
-from backend_server.func_bot import bot_send_file
 from backend_server.user_settings import UserSettings
+from backend_server.func import break_into_blocks, str_del_startswith
+from backend_server.func_bot import make_menu_reply, send_content
 
 current_user = UserSettings()
 def_commands = ['cd', 'lcd', 'pyenv', 'shell', 'cmd', 'get', 'put', 'local', 'sudo', 'bot']
-
-
-def make_menu_reply(prefix, groups, items, menu_index, text_back='< Back', text_next='Next >', add_items=None):
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    buttons = [types.KeyboardButton(prefix + item) for item in items]
-    button_back = types.KeyboardButton(text_back)
-    button_next = types.KeyboardButton(text_next)
-    menu = group_elements(buttons, groups, menu_index, button_back, button_next, add_items)
-    if len(menu) > 0:
-        for item in menu:
-            markup.add(*item)
-    else:
-        markup = types.ReplyKeyboardRemove()
-    return markup
 
 
 def make_menu_com_history():
@@ -44,7 +30,10 @@ def command_select_server(chat_id: int, message_text: str):
     if message_text in ['< Back', 'Next >']:
         menu_servers_funcs = {'< Back': current_user.menu_servers_back, 'Next >': current_user.menu_servers_next}
         menu_servers_funcs[message_text](groups)
-        tgbot.send_message(chat_id, f'{message_text}  {current_user.menu_servers + 1}', reply_markup=make_menu_server())
+        current_user.markup = make_menu_server()
+        tgbot.send_message(
+            chat_id, f'{message_text}  {current_user.menu_servers + 1}', reply_markup=current_user.markup
+        )
     else:
         local_name = prefix + 'local'
         items = [prefix + server['name'] for server in main_conf['servers']]
@@ -52,12 +41,12 @@ def command_select_server(chat_id: int, message_text: str):
         current_user.set_local(local_conf)
         server_conf = local_conf if message_text == local_name else main_conf['servers'][items.index(message_text)]
         current_user.connect(server_conf)
-        markup = make_menu_com_history() if tgconf['menu_commands_exists'] else types.ReplyKeyboardRemove()
+        current_user.markup = make_menu_com_history() if tgconf['menu_commands_exists'] else types.ReplyKeyboardRemove()
         if message_text == local_name:
             message_send = f"Connection established: local"
         else:
             message_send = f"Connection established: {server_conf['user']}@{server_conf['ip']}:{server_conf['port']}"
-        tgbot.send_message(chat_id, message_send, reply_markup=markup)
+        tgbot.send_message(chat_id, message_send, reply_markup=current_user.markup)
 
 
 def command_work_session(chat_id: int, message_text: str):
@@ -68,13 +57,10 @@ def command_work_session(chat_id: int, message_text: str):
     for message_item in message_lst:
         output, srv_type = current_user.con_send(chat_id, message_item)
         if output:
-            markup = make_menu_com_history() if tgconf['menu_commands_exists'] else types.ReplyKeyboardRemove()
-            message_send, tmp_file = current_user.set_content(output, srv_type)
-            if tmp_file:
-                bot_send_file(chat_id, tmp_file)
-                tgbot.send_message(chat_id, message_send + ' ...', reply_markup=markup)
-            else:
-                tgbot.send_message(chat_id, message_send, reply_markup=markup)
+            current_user.markup = (
+                make_menu_com_history() if tgconf['menu_commands_exists'] else types.ReplyKeyboardRemove()
+            )
+            send_content(current_user, chat_id, output, srv_type)
 
 
 def command_bot_edit(chat_id: int, message_text: str):
@@ -100,7 +86,8 @@ handle_text_funcs = {
 @tgbot.message_handler(commands=['start'])
 def handle_start(message, res=False):
     chat_id = message.chat.id
-    tgbot.send_message(chat_id, 'Select server', reply_markup=make_menu_server())
+    current_user.markup = make_menu_server()
+    tgbot.send_message(chat_id, 'Select server', reply_markup=current_user.markup)
     current_user.stage = 'select_server'
 
 
@@ -109,7 +96,8 @@ def handle_start(message, res=False):
     chat_id = message.chat.id
     if current_user.stage == 'work_session':
         current_user.unconnect()
-        tgbot.send_message(chat_id, 'Select server', reply_markup=make_menu_server())
+        current_user.markup = make_menu_server()
+        tgbot.send_message(chat_id, 'Select server', reply_markup=current_user.markup)
         current_user.stage = 'select_server'
 
 
