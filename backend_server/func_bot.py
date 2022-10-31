@@ -33,10 +33,14 @@ def make_menu_reply(
     return markup
 
 
-def send_content(current_user, chat_id: int, output: str, srv_type: str):
-    message_send, tmp_file = current_user.set_content(output, srv_type)
+def send_message_file(current_user, chat_id: int, message_send: str, tmp_file: str):
     if tmp_file:
         bot_send_file(chat_id, tmp_file)
         tgbot.send_message(chat_id, message_send + ' ...', reply_markup=current_user.markup)
     else:
         tgbot.send_message(chat_id, message_send, reply_markup=current_user.markup)
+
+
+def send_content(current_user, chat_id: int, output: str, srv_type: str):
+    message_send, tmp_file = current_user.set_content(output, srv_type)
+    send_message_file(current_user, chat_id, message_send, tmp_file)
