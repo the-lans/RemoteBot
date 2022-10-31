@@ -1,11 +1,10 @@
 from telebot import types
 
 from backend_server.config import tgbot, tgconf, main_conf
-from backend_server.user_settings import UserSettings
 from backend_server.func import break_into_blocks, str_del_startswith
 from backend_server.func_bot import make_menu_reply, send_content
+from backend_server.users import current_user
 
-current_user = UserSettings()
 def_commands = ['cd', 'lcd', 'pyenv', 'shell', 'cmd', 'get', 'put', 'local', 'sudo', 'bot']
 
 
@@ -55,7 +54,7 @@ def command_work_session(chat_id: int, message_text: str):
     current_user.add_srv_history(message_text)
     message_lst = break_into_blocks(message_text, def_commands)
     for message_item in message_lst:
-        output, srv_type = current_user.con_send(chat_id, message_item)
+        output, srv_type = current_user.con_send(message_item)
         if output:
             current_user.markup = (
                 make_menu_com_history() if tgconf['menu_commands_exists'] else types.ReplyKeyboardRemove()
@@ -86,14 +85,16 @@ handle_text_funcs = {
 @tgbot.message_handler(commands=['start'])
 def handle_start(message, res=False):
     chat_id = message.chat.id
+    current_user.chat_id = chat_id
     current_user.markup = make_menu_server()
     tgbot.send_message(chat_id, 'Select server', reply_markup=current_user.markup)
     current_user.stage = 'select_server'
 
 
 @tgbot.message_handler(commands=['unconnect'])
-def handle_start(message, res=False):
+def handle_finish(message, res=False):
     chat_id = message.chat.id
+    current_user.chat_id = chat_id
     if current_user.stage == 'work_session':
         current_user.unconnect()
         current_user.markup = make_menu_server()
@@ -104,5 +105,6 @@ def handle_start(message, res=False):
 @tgbot.message_handler(content_types=['text'])
 def handle_text(message):
     chat_id = message.chat.id
+    current_user.chat_id = chat_id
     message_text = message.text.strip()
     handle_text_funcs[current_user.stage](chat_id, message_text)

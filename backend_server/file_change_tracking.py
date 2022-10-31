@@ -5,11 +5,13 @@ from pathlib import Path
 
 
 class FileChangeTracking:
-    def __init__(self, path=None, tmp_file=None, threshold1=0, threshold2=0):
+    def __init__(self, path=None, tmp_file=None, threshold1=0, threshold2=0, is_srv=False, connect_obj=None):
         self.path = path
         self.size = 0
         self.dtm = 0.0
         self.pointer = 0
+        self.is_srv = is_srv
+        self.connect_obj = connect_obj
         if path:
             self.check()
         self.pointer = self.size
@@ -26,18 +28,28 @@ class FileChangeTracking:
             os.remove(self.tmp_file)
 
     def check(self):
-        dtm = getmtime(self.path)
+        dtm = float(self.connect_obj.func_path('getmtime', self.path)) if self.is_srv else getmtime(self.path)
         if dtm > self.dtm:
-            size = getsize(self.path)
+            size = int(self.connect_obj.func_path('getsize', self.path)) if self.is_srv else getsize(self.path)
             self.size, self.dtm = (size, dtm)
             if size < self.size:
                 self.pointer = 0
         return self.size - self.pointer
 
+    def check_try(self):
+        try:
+            return self.check() > 0
+        except Exception as e:
+            print(e)
+            return False
+
     def read(self):
-        with open(self.path, 'rt') as fp:
-            fp.seek(self.pointer, 0)
-            content = fp.read()
+        if self.is_srv:
+            content = self.connect_obj.read_path(self.path, self.pointer)
+        else:
+            with open(self.path, 'rt') as fp:
+                fp.seek(self.pointer, 0)
+                content = fp.read()
         self.pointer = self.size
         return content
 

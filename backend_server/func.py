@@ -163,6 +163,15 @@ def path_join(path1, path2, sys_type):
         return sys_symbol.join(path1_arr)
 
 
+def path_split(path, sys_type):
+    sys_symbol = '\\' if sys_type == 'win' else '/'
+    if sys_type == 'win':
+        path = path.replace('/', sys_symbol)
+    else:
+        path = path.replace('\\', sys_symbol)
+    return path.split(sys_symbol)
+
+
 def dict_to_str(data: dict, custom: str = '{0}: {1}') -> str:
     return '\n'.join([custom.format(key, val) for key, val in data.items()])
 

@@ -1,31 +1,19 @@
 from time import sleep
 from os.path import join, basename
-from fabric import Connection
-from fabric.runners import Result
 
 from backend_server.config import tgconf, main_conf, DATA_DIR
 from backend_server.func import cmd_parser, path_relative, path_join, dict_to_str, file_write, str_to_bool
 from backend_server.func_bot import bot_send_file, send_content
 from backend_server.file_change_tracking import FileChangeTracking
+from backend_server import tracking_files, root_connect, RemoteConnect, file_tracking
 
 
-class UserSettings:
+class UserSettings(RemoteConnect):
     def __init__(self):
+        super().__init__()
         self.menu_servers = 0
         self.menu_com_history = 0
         self.stage = None
-        self.con = None
-        self.is_srv = False
-        self.cd = None
-        self.lcd = DATA_DIR
-        self.pyenv = None
-        self.shell = None
-        self.encode = None
-        self.decode = None
-        self.lencode = None
-        self.ldecode = None
-        self.sys = None
-        self.lsys = None
         self.asynchronous = False
         self.tmp_file = FileChangeTracking(tmp_file=DATA_DIR)
         self.tmp_file.threshold1 = tgconf['threshold1']
@@ -33,46 +21,18 @@ class UserSettings:
         self.text_edit = ''
         self.commands_history = []
         self.srv_history = []
-        self.current_server = {}
-        self.local_server = {}
         self.tasks_process = []
         self.markup = None
+        self.chat_id = None
 
     def connect(self, server_conf: dict):
-        self.is_srv = False
-        if 'ip' in server_conf:
-            if server_conf['ip'] in ['127.0.0.1']:
-                self.con = Connection(server_conf['ip'])
-            else:
-                self.con = Connection(
-                    server_conf['ip'], user=server_conf.get('user', 'root'), port=server_conf.get('port', 22)
-                )
-                self.is_srv = True
-        self.cd = server_conf.get('cd', None)
-        self.lcd = server_conf.get('lcd', self.lcd)
-        self.pyenv = server_conf.get('pyenv', None)
-        self.shell = server_conf.get('shell', None)
-        self.encode = server_conf.get('encode', None)
-        self.decode = server_conf.get('decode', None)
-        self.sys = server_conf.get('sys', None)
+        super().connect(server_conf)
         self.srv_history = []
-        self.current_server = server_conf
         self.stage = 'work_session'
 
-    def set_local(self, local_conf: dict):
-        self.lencode = local_conf.get('encode', None)
-        self.ldecode = local_conf.get('decode', None)
-        self.lsys = local_conf.get('sys', None)
-        self.local_server = local_conf
-
     def unconnect(self):
-        if self.con:
-            self.con.close()
-        self.con = None
-        self.is_srv = False
+        super().unconnect()
         self.srv_history = []
-        self.current_server = {}
-        self.local_server = {}
         self.stage = 'select_server'
 
     def menu_servers_next(self, shape: tuple):
@@ -94,26 +54,7 @@ class UserSettings:
     def menu_pages_com_history(self, shape: tuple):
         return (len(self.commands_history) - 1) // (shape[0] * shape[1]) + 1
 
-    def set_attr_cmd(self, name: str, value: str) -> str:
-        setattr(self, name, value)
-        return f'{name}> {value}'
-
-    def set_attr_cd(self, name: str, value: str) -> str:
-        if path_relative(value):
-            value = path_join(getattr(self, name), value, getattr(self, 'lsys' if name[0] == 'l' else 'sys'))
-        return self.set_attr_cmd(name, value)
-
-    @staticmethod
-    def format_out(res: Result, mes_default: str = None) -> str:
-        stdout = getattr(res, 'stdout', '').strip()
-        stderr = getattr(res, 'stderr', '').strip()
-        res = f'{stdout}\n{stderr}'.strip()
-        return res if res else (mes_default if mes_default else '')
-
-    def get_type_server(self, main_cmd: str) -> str:
-        return 'local' if main_cmd == 'local' or not self.is_srv else 'server'
-
-    def con_send(self, chat_id: int, text: str) -> (str, str):
+    def con_send(self, text: str) -> (str, str):
         # Check text
         text = text.strip()
         if not text:
@@ -178,7 +119,7 @@ class UserSettings:
             elif main_cmd in ['bot']:
                 if len(args) > 0:
                     del args[0]
-                result = self.command_bot(chat_id, first_cmd, message_success, *args, **kwargs)
+                result = self.command_bot(first_cmd, message_success, *args, **kwargs)
                 return result, srv_type
         except Exception as err:
             return str(err), None
@@ -203,13 +144,7 @@ class UserSettings:
         data['tmp_file'] = self.tmp_file.tmp_file
         return data
 
-    def get_absolute_path(self, args: tuple, is_local: bool = False):
-        if self.is_srv and not is_local:
-            return [path_join(self.cd, item, self.sys) if path_relative(item) else item for item in args]
-        else:
-            return [path_join(self.lcd, item, self.lsys) if path_relative(item) else item for item in args]
-
-    def command_bot(self, chat_id: int, first_cmd: str, message_success: str, *args, **kwargs) -> str:
+    def command_bot(self, first_cmd: str, message_success: str, *args, **kwargs) -> str:
         output = None
         data = {}
         out_func = {'settings': dict_to_str, 'get': dict_to_str}
@@ -223,10 +158,10 @@ class UserSettings:
             args = self.get_absolute_path(args, is_local)
             filename = basename(args[0])
             if is_local:
-                bot_send_file(chat_id, args[0])
+                bot_send_file(self.chat_id, args[0])
             else:
                 self.con.get(args[0], join(DATA_DIR, filename))
-                bot_send_file(chat_id, join(DATA_DIR, filename))
+                bot_send_file(self.chat_id, join(DATA_DIR, filename))
             output = message_success
         elif first_cmd == 'edit':
             self.text_edit = ''
@@ -267,9 +202,14 @@ class UserSettings:
             while self.tasks_process:
                 task = self.tasks_process.pop()
                 sout = self.format_out(task.join(), message_success)
-                send_content(self, chat_id, sout, self.get_type_server('run'))
+                send_content(self, self.chat_id, sout, self.get_type_server('run'))
                 sleep(1)
             output = 'End of job queue.'
+        elif first_cmd == 'task':
+            second_cmd = args[0]
+            if second_cmd == 'tracking':
+                file_tracking(tracking_files, self, root_connect)
+            output = message_success
 
         if first_cmd in out_func:
             output = out_func[first_cmd](data)
