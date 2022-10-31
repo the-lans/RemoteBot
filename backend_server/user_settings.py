@@ -145,7 +145,7 @@ class UserSettings(RemoteConnect):
         return data
 
     def command_bot(self, first_cmd: str, message_success: str, *args, **kwargs) -> str:
-        output = None
+        output = message_success
         data = {}
         out_func = {'settings': dict_to_str, 'get': dict_to_str}
 
@@ -162,7 +162,6 @@ class UserSettings(RemoteConnect):
             else:
                 self.con.get(args[0], join(DATA_DIR, filename))
                 bot_send_file(self.chat_id, join(DATA_DIR, filename))
-            output = message_success
         elif first_cmd == 'edit':
             self.text_edit = ''
             self.stage = 'bot_edit'
@@ -177,7 +176,6 @@ class UserSettings(RemoteConnect):
             else:
                 self.save_text_edit(join(DATA_DIR, filename), is_append)
                 self.con.put(join(DATA_DIR, filename), args[0])
-            output = message_success
         elif first_cmd in ['next', 'back']:
             groups = tgconf['menu_commands']
             if first_cmd == 'next':
@@ -194,10 +192,8 @@ class UserSettings(RemoteConnect):
                 path_join(self.cd, 'fabfile.py', self.sys),
             )
             self.con.put(*args, **kwargs)
-            output = message_success
         elif first_cmd == 'async':
             self.asynchronous = str_to_bool(args[0]) if len(args) > 0 else not self.asynchronous
-            output = message_success
         elif first_cmd == 'join':
             while self.tasks_process:
                 task = self.tasks_process.pop()
@@ -209,7 +205,14 @@ class UserSettings(RemoteConnect):
             second_cmd = args[0]
             if second_cmd == 'tracking':
                 file_tracking(tracking_files, self, root_connect)
-            output = message_success
+        elif first_cmd == 'tasks':
+            second_cmd = args[0]
+            if second_cmd == 'on':
+                main_conf['tasks'] = True
+            elif second_cmd == 'off':
+                main_conf['tasks'] = False
+        else:
+            output = None
 
         if first_cmd in out_func:
             output = out_func[first_cmd](data)

@@ -2,6 +2,7 @@ import threading
 import time
 from schedule import every, repeat, run_pending
 
+from backend_server.config import main_conf
 from backend_server import root_connect, tracking_files, file_tracking
 from backend_server.users import current_user
 
@@ -34,4 +35,5 @@ def run_continuously(interval=1):
 @repeat(every(10).minutes)
 def task_file_tracking():
     """Tasks: check file tracking"""
-    file_tracking(tracking_files, current_user, root_connect)
+    if main_conf['tasks']:
+        file_tracking(tracking_files, current_user, root_connect)
