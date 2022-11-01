@@ -112,9 +112,17 @@ class UserSettings(RemoteConnect):
                         self.tasks_process.append(result)
                         message_success = f'{message_success} Async enabled.'
                     return self.format_out(result, message_success), srv_type
-            elif main_cmd in ['get', 'put', 'local']:
-                cmd_func = {'get': self.con.get, 'put': self.con.put, 'local': self.con.local}
+            elif main_cmd in ['get', 'put']:
+                cmd_func = {'get': self.con.get, 'put': self.con.put}
                 result = cmd_func[main_cmd](*args, **kwargs)
+                return self.format_out(result, message_success), srv_type
+            elif main_cmd in ['local']:
+                com = (
+                    f"cd {self.cd}\n{self.pyenv}\n{shell_com}"
+                    if first_cmd in main_conf['commands_pyenv']
+                    else f"cd {self.cd}\n{shell_com}"
+                )
+                result = self.con.local(com, shell=kwargs.get('shell'))
                 return self.format_out(result, message_success), srv_type
             elif main_cmd in ['bot']:
                 if len(args) > 0:

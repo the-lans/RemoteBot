@@ -1,6 +1,7 @@
 servers:
   -
     name: 'local'
+    ip: '127.0.0.1'
     sys: win
     cd: 'E:\ProgramProjects\PublicGIT\RemoteBot'
     pyenv: 'conda activate bots'
@@ -24,6 +25,7 @@ commands_pyenv:
   - python
   - conda
   - fab
+  - black
 
 commands_fab_ext:
   - screen

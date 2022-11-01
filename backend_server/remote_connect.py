@@ -24,6 +24,7 @@ class RemoteConnect:
 
     def connect(self, server_conf: dict):
         self.is_srv = False
+        self.con = None
         if 'ip' in server_conf:
             if server_conf['ip'] in ['127.0.0.1']:
                 self.con = Connection(server_conf['ip'])
