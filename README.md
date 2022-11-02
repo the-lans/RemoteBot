@@ -137,19 +137,19 @@ These commands start like this: **`fab ...`**
 
 1. We enter the start command. Select a server from the list of servers, connect to it.
 
-![001](.\image\001.png)
+![001](https://github.com/the-lans/RemoteBot/blob/main/image/001.png?raw=true)
 
   
 
 2. We connected to the server via SSH. Now we can enter commands.
 
-![002](.\image\002.png)
+![002](https://github.com/the-lans/RemoteBot/blob/main/image/002.png?raw=true)
 
   
 
 3. After some time, we receive a response from the server. If the message size is too large (adjusted by a parameter *threshold2*), then it is split into text and a file. You can view the entire message in the file. If command history is enabled, you will see these commands in the user menu.
 
-![003](.\image\003.png)
+![003](https://github.com/the-lans/RemoteBot/blob/main/image/003.png?raw=true)
 
   
 
