@@ -117,12 +117,15 @@ class UserSettings(RemoteConnect):
                 result = cmd_func[main_cmd](*args, **kwargs)
                 return self.format_out(result, message_success), srv_type
             elif main_cmd in ['local']:
+                local_cd = self.local_server.get('cd', self.lcd)
+                local_pyenv = self.local_server.get('pyenv', self.pyenv)
+                local_shell = self.local_server.get('shell', kwargs.get('shell'))
                 com = (
-                    f"cd {self.cd}\n{self.pyenv}\n{shell_com}"
+                    f"cd {local_cd} && {local_pyenv} && {shell_com}"
                     if first_cmd in main_conf['commands_pyenv']
-                    else f"cd {self.cd}\n{shell_com}"
+                    else f"cd {local_cd} && {shell_com}"
                 )
-                result = self.con.local(com, shell=kwargs.get('shell'))
+                result = self.con.local(com, shell=local_shell)
                 return self.format_out(result, message_success), srv_type
             elif main_cmd in ['bot']:
                 if len(args) > 0:

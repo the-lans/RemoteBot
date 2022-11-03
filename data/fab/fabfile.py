@@ -20,14 +20,14 @@ def hello(c, name='world'):
 
 @task
 def sql(c, com, name='my_db'):
-    c.run(f"export PATH=/usr/pgsql-10/bin:$PATH && psql -U postgres -d {name} -c '{com}'")
+    c.run(f'export PATH=/usr/pgsql-10/bin:$PATH && psql -U postgres -d {name} -c "{com}"')
 
 
 @task
 def screen(c, com, pathcd='', pyenv=''):
     command = process_command(com, pathcd, pyenv)
     print(command)
-    c.run(f"screen -d -m bash -c '{command}'", hide=True, pty=False)
+    c.run(f'screen -d -m bash -c "{command}"', hide=True, pty=False)
     print("Operation 'screen' completed!")
 
 

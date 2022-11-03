@@ -69,7 +69,7 @@ class RemoteConnect:
     @staticmethod
     def format_out(res: Result, mes_default: str = None) -> str:
         stdout = getattr(res, 'stdout', '').strip()
-        stderr = getattr(res, 'stderr', '').strip()
+        stderr = getattr(res, 'stderr', '').strip() if res.return_code or not stdout else ''
         res = f'{stdout}\n{stderr}'.strip()
         return res if res else (mes_default if mes_default else '')
 

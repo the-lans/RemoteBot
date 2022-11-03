@@ -40,11 +40,19 @@ def command_select_server(chat_id: int, message_text: str):
         current_user.set_local(local_conf)
         server_conf = local_conf if message_text == local_name else main_conf['servers'][items.index(message_text)]
         current_user.connect(server_conf)
-        current_user.markup = make_menu_com_history() if tgconf['menu_commands_exists'] else types.ReplyKeyboardRemove()
-        if message_text == local_name:
-            message_send = f"Connection established: local"
+        if current_user.test_connection():
+            current_user.markup = (
+                make_menu_com_history() if tgconf['menu_commands_exists'] else types.ReplyKeyboardRemove()
+            )
+            if message_text == local_name:
+                message_send = f"Connection established: local"
+            else:
+                message_send = (
+                    f"Connection established: {server_conf['user']}@{server_conf['ip']}:{server_conf['port']}"
+                )
         else:
-            message_send = f"Connection established: {server_conf['user']}@{server_conf['ip']}:{server_conf['port']}"
+            current_user.unconnect()
+            message_send = "Connection failed"
         tgbot.send_message(chat_id, message_send, reply_markup=current_user.markup)
 
 
