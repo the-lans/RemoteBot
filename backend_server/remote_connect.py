@@ -1,5 +1,6 @@
 from fabric import Connection
 from fabric.runners import Result
+from os.path import isdir
 
 from backend_server.config import main_conf, DATA_DIR
 from backend_server.func import path_relative, path_join
@@ -50,11 +51,12 @@ class RemoteConnect:
 
     def test_connection(self):
         if self.get_type_server('run') == 'local':
-            return True
+            return isdir(self.lcd)
         else:
             try:
-                self.con.run('dir' if self.sys == 'win' else 'ls')
-                return True
+                with self.con.cd(self.cd):
+                    self.con.run('dir' if self.sys == 'win' else 'ls')
+                return isdir(self.lcd)
             except Exception:
                 return False
 
@@ -87,9 +89,15 @@ class RemoteConnect:
         return f'{name}> {value}'
 
     def set_attr_cd(self, name: str, value: str) -> str:
+        old_value = getattr(self, name)
         if path_relative(value):
-            value = path_join(getattr(self, name), value, getattr(self, 'lsys' if name[0] == 'l' else 'sys'))
-        return self.set_attr_cmd(name, value)
+            value = path_join(old_value, value, getattr(self, 'lsys' if name[0] == 'l' else 'sys'))
+        out = self.set_attr_cmd(name, value)
+        if self.test_connection():
+            return out
+        else:
+            out = self.set_attr_cmd(name, old_value)
+            return f'Invalid directory\n{out}'
 
     def run_fab(self, shell_com: str):
         with self.con.cd(self.cd):
